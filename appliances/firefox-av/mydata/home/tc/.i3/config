@@ -1,0 +1,2 @@
+for_window [class="Firefox"] border pixel 1
+exec /usr/local/bin/browser

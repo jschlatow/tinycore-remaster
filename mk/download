@@ -1,0 +1,64 @@
+#!/usr/bin/make -f
+
+#
+# \brief  Rules for downloading TinyCore packages
+# \author Johannes Schlatow
+# \date   2021-06-30
+#
+
+ROOT_DIR     := $(realpath $(dir $(MAKEFILE_LIST))/..)
+
+include $(ROOT_DIR)/mk/common.inc
+
+define HELP_MESSAGE
+
+  Tool for downloading tcz and iso files from tinycorelinux.net.
+
+  usage:
+
+    $(firstword $(MAKEFILE_LIST)) 11.x/<filename>.tcz[.md5.txt|.dep|.tree] [DOWNLOAD_DIR=<path>]
+    or
+    $(firstword $(MAKEFILE_LIST)) <filename>-11.1.iso[.md5.txt] [DOWNLOAD_DIR=<path>]
+
+endef
+
+include $(ROOT_DIR)/mk/front_end.inc
+
+TARGETS = $(addprefix $(DOWNLOAD_DIR)/,$(MAKECMDGOALS))
+
+$(call check_tool,curl)
+$(call check_tool,md5sum)
+
+# download of tcz archives
+$(DOWNLOAD_DIR)/11.x/%.tcz: $(DOWNLOAD_DIR)/11.x/%.tcz.md5.txt
+	@echo "Downloading $@"
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/11.x/x86/tcz/$*.tcz &> /dev/null
+	$(VERBOSE)cd $(dir $@) && md5sum -c $*.tcz.md5.txt || rm $@
+
+# download of md5 files for tcz archives
+$(DOWNLOAD_DIR)/11.x/%.tcz.md5.txt:
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/11.x/x86/tcz/$*.tcz.md5.txt &> /dev/null
+
+# dependencies of a tcz archive are stored in a *.tcz.dep file
+# if it does not exist, there are no dependencies
+$(DOWNLOAD_DIR)/11.x/%.tcz.dep:
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/11.x/x86/tcz/$*.tcz.dep &> /dev/null || touch $@
+	$(VERBOSE)sed -i 's/^/11.x\//' $@
+
+$(DOWNLOAD_DIR)/11.x/%.tcz.tree:
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/11.x/x86/tcz/$*.tcz.tree &> /dev/null || touch $@
+	$(VERBOSE)sed -i 's/\s*\(.\)/11.x\/\1/' $@
+
+$(DOWNLOAD_DIR)/%-11.1.iso: $(DOWNLOAD_DIR)/%-11.1.iso.md5.txt
+	@echo "Downloading $@"
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/11.x/x86/release/$*-11.1.iso &> /dev/null
+	$(VERBOSE)cd $(dir $@) && md5sum -c $*-11.1.iso.md5.txt || rm $@
+
+$(DOWNLOAD_DIR)/%-11.1.iso.md5.txt:
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/11.x/x86/release/$*-11.1.iso.md5.txt &> /dev/null
+
+$(MAKECMDGOALS): $(TARGETS) | $(DOWNLOAD_DIR)
+	@true
+
+$(DOWNLOAD_DIR):
+	$(VERBOSE)mkdir -p $@

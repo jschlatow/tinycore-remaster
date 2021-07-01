@@ -1,0 +1,159 @@
+#!/usr/bin/make -f
+
+#
+# \brief  Build iso
+# \author Johannes Schlatow
+# \date   2021-07-01
+#
+
+ROOT_DIR     := $(realpath $(dir $(MAKEFILE_LIST))/..)
+
+include $(ROOT_DIR)/mk/common.inc
+
+define HELP_MESSAGE
+
+  Tool for remastering tinycore ISOs files
+
+  usage:
+
+    $(firstword $(MAKEFILE_LIST)) <name> [BUILD_DIR=<path>]
+
+endef
+
+include $(ROOT_DIR)/mk/front_end.inc
+
+APPLIANCE := $(firstword $(MAKECMDGOALS))
+
+include $(ROOT_DIR)/appliances/$(APPLIANCE)/iso.mk
+
+BUILD_DIR ?= $(ROOT_DIR)/build
+
+# check that $(BUILD_DIR)/$(APPLIANCE).dep exists
+ifeq ($(wildcard $(BUILD_DIR)/$(APPLIANCE).dep),)
+$(error $(BUILD_DIR)/$(APPLIANCE).dep does not exist. Run mk/dependencies before.)
+endif
+
+
+$(call check_tool,isoinfo)
+$(call check_tool,mkisofs)
+
+DEPS(DOWNLOAD) := $(addsuffix .tcz,${APPS(DOWNLOAD)})
+DEPS(DOWNLOAD) += $(call dependencies_from_files,$(BUILD_DIR)/$(APPLIANCE).dep)
+DEPS(DOWNLOAD) := $(addprefix $(DOWNLOAD_DIR)/,$(sort ${DEPS(DOWNLOAD)}))
+
+DEPS(ARCHIVE) := $(addprefix $(ARCHIVE_DIR)/,$(addsuffix .tcz,${APPS(ARCHIVE)}))
+DEPS(SHARE)   := $(addprefix $(SHARE_DIR)/,$(addsuffix .tcz,${APPS(SHARE)}))
+
+TCZ := ${DEPS(DOWNLOAD)}
+TCZ += ${DEPS(ARCHIVE)}
+TCZ += ${DEPS(SHARE)}
+
+DEP := $(addsuffix .dep,${DEPS(DOWNLOAD)})
+DEP += $(addsuffix .dep,${DEPS(ARCHIVE)})
+DEP += $(addsuffix .dep,${DEPS(SHARE)})
+
+# generate onboot.lst from explicitly mentioned tczs
+ONBOOT := $(notdir $(addsuffix .tcz,${APPS(DOWNLOAD)}))
+ONBOOT += $(notdir ${DEPS(ARCHIVE)})
+ONBOOT += $(notdir ${DEPS(SHARE)})
+
+BOOTOPT :=
+MYDATA  := $(ROOT_DIR)/appliances/$(APPLIANCE)/mydata
+# if $(MYDATA) exists, build mydata.tgz
+ifneq ($(wildcard $(MYDATA)),)
+BOOTOPT := restore=sr0
+mydata: $(BUILD_DIR)/$(APPLIANCE)/mydata.tgz
+else
+mydata:
+	@true
+endif
+
+# downloadable dependencies
+$(DOWNLOAD_DIR)/%: | $(DOWNLOAD_DIR)
+	$(VERBOSE)$(ROOT_DIR)/mk/download $* DOWNLOAD_DIR=$(DOWNLOAD_DIR)
+
+# buildable dependencies
+$(SHARE_DIR)/%:
+	$(VERBOSE)make -f $(SHARE_DIR)/Makefile -C $(SHARE_DIR) $* DOWNLOAD_DIR=$(DOWNLOAD_DIR)
+
+# create custom mydata.tgz
+$(BUILD_DIR)/$(APPLIANCE)/mydata.tgz: $(MYDATA)
+	$(VERBOSE)cd $(MYDATA) && tar --owner=1001 --group=50 -czf $@ *
+
+# copy tcz files
+$(BUILD_DIR)/$(APPLIANCE)/cde/optional: $(TCZ) $(DEP)
+	$(VERBOSE)mkdir -p $@
+	$(VERBOSE)cp $(TCZ) $@
+	$(VERBOSE)cp $(DEP) $@
+	@# remove leading version name from .dep files
+	$(VERBOSE)\
+		for dep in $@/*.dep; do \
+			sed 's/.*\///' -i $$dep; \
+		done;
+
+# generate onboot.lst
+$(BUILD_DIR)/$(APPLIANCE)/cde/onboot.lst:
+	$(VERBOSE)mkdir -p $(dir $@)
+	$(VERBOSE)rm -f $@
+	$(VERBOSE) \
+	for tcz in $(ONBOOT); do \
+		echo "$$tcz" >> $@; \
+	done;
+
+# generate isolinux.cfg
+$(BUILD_DIR)/$(APPLIANCE)/boot/isolinux/isolinux.cfg:
+	$(VERBOSE)mkdir -p $(dir $@)
+	$(VERBOSE)echo    "display boot.msg"      >  $@
+	$(VERBOSE)echo    "default custom"        >> $@
+	$(VERBOSE)echo    "label custom"          >> $@
+	$(VERBOSE)echo    " kernel /boot/vmlinuz" >> $@
+	$(VERBOSE)echo -n " initrd /boot/core.gz" >> $@
+	$(VERBOSE) \
+		for initrd in $(notdir $(EXTRA_INITRDS)); do \
+			echo -n ",/boot/$$initrd" >> $@; \
+		done;
+	$(VERBOSE)echo    ""                                  >> $@
+	$(VERBOSE)echo    " append loglevel=3 cde $(BOOTOPT)" >> $@
+	$(VERBOSE)echo    "implicit 0"                        >> $@
+	$(VERBOSE)echo    "prompt 0"                          >> $@
+	$(VERBOSE)echo    "timeout 1"                         >> $@
+	$(VERBOSE)echo    "F1 boot.msg"                       >> $@
+	$(VERBOSE)echo    "F2 f2"                             >> $@
+	$(VERBOSE)echo    "F3 f3"                             >> $@
+	$(VERBOSE)echo    "F4 f4"                             >> $@
+
+# copy initrds
+$(BUILD_DIR)/$(APPLIANCE)/boot: $(SHARE_DIR)/$(CORE_GZ) $(SHARE_DIR)/$(EXTRA_INITRDS) $(BUILD_DIR)/$(APPLIANCE)/boot/isolinux/isolinux.cfg
+	$(VERBOSE)mkdir -p $@
+	$(VERBOSE)cp $< $(BUILD_DIR)/$(APPLIANCE)/boot/core.gz
+	$(VERBOSE) \
+		for initrd in $(EXTRA_INITRDS); do \
+			cp $(SHARE_DIR)/$$initrd $(BUILD_DIR)/$(APPLIANCE)/boot/; \
+		done;
+
+# meta recipe for customized files
+$(BUILD_DIR)/$(APPLIANCE): $(BUILD_DIR)/$(APPLIANCE)/cde/onboot.lst $(BUILD_DIR)/$(APPLIANCE)/cde/optional $(BUILD_DIR)/$(APPLIANCE)/boot mydata
+	@true
+
+# unpack base iso
+$(BUILD_DIR)/$(APPLIANCE)-iso: $(DOWNLOAD_DIR)/$(BASE_ISO) $(BUILD_DIR)/$(APPLIANCE) | $(BUILD_DIR)
+	$(VERBOSE)mkdir -p $@
+	$(VERBOSE)rm -rf $@/*
+	$(VERBOSE)cd $@ && isoinfo -i $< -J -X
+	$(VERBOSE)chmod -R ug+w $@
+	$(VERBOSE)cp -r $(BUILD_DIR)/$(APPLIANCE)/* $@
+	$(VERBOSE)rm -r $(BUILD_DIR)/$(APPLIANCE)
+
+# build iso
+$(BUILD_DIR)/$(APPLIANCE).iso: $(BUILD_DIR)/$(APPLIANCE)-iso | $(BUILD_DIR)
+	$(VERBOSE)mkisofs -l -J -r -V $(APPLIANCE) -no-emul-boot -boot-load-size 4 \
+		-boot-info-table -b boot/isolinux/isolinux.bin \
+		-c boot/isolinux/boot.cat -o $@ $<
+	$(VERBOSE)rm -r $<
+
+# default goal
+$(MAKECMDGOALS): $(BUILD_DIR)/$(APPLIANCE).iso
+	@true
+
+$(BUILD_DIR) $(DOWNLOAD_DIR):
+	$(VERBOSE)mkdir -p $@

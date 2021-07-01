@@ -1,0 +1,54 @@
+#!/usr/bin/make -f
+
+#
+# \brief  Build iso
+# \author Johannes Schlatow
+# \date   2021-07-05
+#
+
+ROOT_DIR     := $(realpath $(dir $(MAKEFILE_LIST))/..)
+
+include $(ROOT_DIR)/mk/common.inc
+
+define HELP_MESSAGE
+
+  Helper tool for aggregating tinycore package dependencies.
+
+  usage:
+
+    $(firstword $(MAKEFILE_LIST)) <name> [BUILD_DIR=<path>]
+
+endef
+
+include $(ROOT_DIR)/mk/front_end.inc
+
+APPLIANCE := $(firstword $(MAKECMDGOALS))
+
+include $(ROOT_DIR)/appliances/$(APPLIANCE)/iso.mk
+
+BUILD_DIR ?= $(ROOT_DIR)/build
+
+DEPS1 := $(addsuffix .tcz,${APPS(DOWNLOAD)})
+DEPS1 += $(call dependencies_from_files,$(addsuffix .tcz.dep,$(addprefix $(ARCHIVE_DIR)/,${APPS(ARCHIVE)})))
+DEPS1 += $(call dependencies_from_files,$(addsuffix .tcz.dep,$(addprefix $(SHARE_DIR)/,${APPS(SHARE)})))
+
+DEPS2 := $(addprefix $(DOWNLOAD_DIR)/,$(addsuffix .tree,$(sort $(DEPS1))))
+
+# download .tree files for each second-level dependency
+$(DOWNLOAD_DIR)/%: | $(DOWNLOAD_DIR)
+	$(VERBOSE)$(ROOT_DIR)/mk/download $* DOWNLOAD_DIR=$(DOWNLOAD_DIR)
+
+# merge .tree files into a single .dep file
+$(BUILD_DIR)/$(APPLIANCE).dep: $(DEPS2) | $(BUILD_DIR)
+	$(VERBOSE)cat $^ > $@
+	$(VERBOSE) \
+		for d in $(DEPS1); do \
+			echo $$d >> $@; \
+		done;
+
+# default goal
+$(MAKECMDGOALS): $(BUILD_DIR)/$(APPLIANCE).dep
+	@true
+
+$(BUILD_DIR) $(DOWNLOAD_DIR):
+	$(VERBOSE)mkdir -p $@
