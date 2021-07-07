@@ -37,15 +37,18 @@ $(DOWNLOAD_DIR)/11.x/%.tcz: $(DOWNLOAD_DIR)/11.x/%.tcz.md5.txt
 
 # download of md5 files for tcz archives
 $(DOWNLOAD_DIR)/11.x/%.tcz.md5.txt:
+	$(VERBOSE)mkdir -p $(dir $@)
 	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/11.x/x86/tcz/$*.tcz.md5.txt &> /dev/null
 
 # dependencies of a tcz archive are stored in a *.tcz.dep file
 # if it does not exist, there are no dependencies
 $(DOWNLOAD_DIR)/11.x/%.tcz.dep:
+	$(VERBOSE)mkdir -p $(dir $@)
 	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/11.x/x86/tcz/$*.tcz.dep &> /dev/null || touch $@
 	$(VERBOSE)sed -i 's/^/11.x\//' $@
 
 $(DOWNLOAD_DIR)/11.x/%.tcz.tree:
+	$(VERBOSE)mkdir -p $(dir $@)
 	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/11.x/x86/tcz/$*.tcz.tree &> /dev/null || touch $@
 	$(VERBOSE)sed -i 's/\s*\(.\)/11.x\/\1/' $@
 
