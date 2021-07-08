@@ -1,7 +1,8 @@
 This directory contains static archives that have been generated/built
 on an installed TinyCore (TC) 11.1 system.
 
-# firefox.tcz
+
+# 11.x/firefox.tcz
 
 This archive has been built following the default instructions for installing
 the latest firefox on TC.
@@ -13,7 +14,8 @@ tce-load -wi firefox_getLastest
 firefox_getLatest.sh
 ```
 
-# i3.tcz
+
+# 11.x/i3.tcz
 
 TC 11.1 does not provide a working package for the i3 window manager.
 Yet, you can compile i3 4.7.2 using the following instructions.
@@ -37,15 +39,10 @@ cd i3-4.7.2
 make
 mkdir /tmp/i3
 make DESTDIR=/tmp/i3 install
-strip -g /tmp/i3/usr/bin/i3
+strip -g /tmp/i3/usr/bin/*
 ```
 
-To strip down the package to a minimum, we may only keep the following
-binaries/scripts in /tmp/i3/usr/bin: i3, i3-with-shmlog and i3-sensible-\*.
-Furthermore, we should adapt /tmp/i3/etc/i3/config to remove the status bar 
-and any occurence of i3-nagbar, i3-config-wizard and dmenu.
-
-Moreover, adding an executable file `/tmp/i3/usr/local/tce.installed/i3` with
+Adding an executable file `/tmp/i3/usr/local/tce.installed/i3` with
 the following content sets i3 as the default window manager:
 
 ```
@@ -59,6 +56,15 @@ In a last step, we create the tcz package:
 cd /tmp
 mksquashfs i3 i3.tcz
 ```
+
+
+# 11.x/i3-minimal.tcz
+
+To strip down the i3 package to a minimum, we only keep the following
+binaries/scripts in /tmp/i3/usr/bin: i3, i3-with-shmlog and i3-sensible-\*.
+Furthermore, we should adapt /tmp/i3/etc/i3/config to remove the status bar 
+and any occurence of i3-nagbar, i3-config-wizard and dmenu.
+
 
 # vboxga5244-5.4.3-tinycore.tar.gz
 
