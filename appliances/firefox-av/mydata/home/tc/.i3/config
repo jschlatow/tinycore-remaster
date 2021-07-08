@@ -1,2 +1,7 @@
 for_window [class="Firefox"] border pixel 1
+for_window [class="Firefox"] layout tabbed
 exec /usr/local/bin/browser
+
+bindsym Mod1+F4 kill
+
+bindsym Mod1+m exec /usr/local/bin/pavucontrol
