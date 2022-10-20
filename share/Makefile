@@ -35,13 +35,27 @@ $(call check_tool,isoinfo)
 $(call check_tool,advdef)
 $(call check_tool,gzip)
 
+########
+# ISOs #
+########
+
 # extract from Core.iso
 11.1/core.gz: $(DOWNLOAD_DIR)/Core-11.1.iso | 11.1
 	$(call extract_from_iso,$<,'/boot/core.gz',$@)
 
+13.1/corepure64.gz: $(DOWNLOAD_DIR)/CorePure64-13.1.iso | 13.1
+	$(call extract_from_iso,$<,'/boot/corepure64.gz',$@)
+
 # extract from TinyCore.iso
 11.1/tinycore.gz: $(DOWNLOAD_DIR)/TinyCore-11.1.iso | 11.1
 	$(call extract_from_iso,$<,'/boot/core.gz',$@)
+
+13.1/tinycorepure64.gz: $(DOWNLOAD_DIR)/TinyCorePure64-13.1.iso | 13.1
+	$(call extract_from_iso,$<,'/boot/corepure64.gz',$@)
+
+################
+# vbox modules #
+################
 
 # remove vboxguest.ko.gz from tinycore.gz
 11.1/tinycore-novboxguest.gz: 11.1/tinycore.gz
@@ -84,10 +98,17 @@ $(call check_tool,gzip)
 	$(VERBOSE)$(pack_initrd)
 	$(VERBOSE)rm -rf $@.incomplete
 
+#################
+# audio support #
+#################
+
 11.x/audio-vbox.tcz.dep: | 11.x
 	$(VERBOSE)echo "11.x/pulseaudio.tcz" > $@
 
-# build minimalistic audio support package for virtualbox
+13.x/audio-vbox.tcz.dep: | 13.x
+	$(VERBOSE)echo "13.x/pulseaudio.tcz" > $@
+
+# build minimalistic audio support package for virtualbox for 11.x
 11.x/audio-vbox.tcz: $(DOWNLOAD_DIR)/11.x/alsa-config.tcz $(ARCHIVE_DIR)/asound.state 11.x/audio-vbox.tcz.dep | 11.x
 	$(VERBOSE)mkdir -p $@.incomplete/usr/local/etc/alsa/cards
 	$(VERBOSE)unsquashfs -d alsa-config.tmp $< > /dev/null
@@ -111,11 +132,43 @@ $(call check_tool,gzip)
 	$(VERBOSE)$(pack_squashfs)
 	$(VERBOSE)rm -r $@.incomplete
 
+# build minimalistic audio support package for virtualbox for 13.x
+13.x/audio-vbox.tcz: $(DOWNLOAD_DIR)/13.x/alsa-config.tcz $(ARCHIVE_DIR)/asound.state 13.x/audio-vbox.tcz.dep | 13.x
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/etc/alsa/cards
+	$(VERBOSE)unsquashfs -d alsa-config.tmp $< > /dev/null
+	$(VERBOSE)cp $(ARCHIVE_DIR)/asound.state $@.incomplete/usr/local/etc/alsa
+	$(VERBOSE)cp -r alsa-config.tmp/usr/local/etc/alsa/pcm $@.incomplete/usr/local/etc/alsa
+	$(VERBOSE)cp    alsa-config.tmp/usr/local/etc/alsa/cards/HDA-Intel.conf $@.incomplete/usr/local/etc/alsa/cards/
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/share/alsa
+	$(VERBOSE)cp -r alsa-config.tmp/usr/local/share/alsa/init $@.incomplete/usr/local/share/alsa
+	$(VERBOSE)rm -rf alsa-config.tmp
+	@# create tce.installed/audio-vbox
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/tce.installed
+	$(VERBOSE)echo "#!/bin/sh"                                                      >  $@.incomplete/usr/local/tce.installed/audio-vbox
+	$(VERBOSE)echo "echo \"/usr/local/etc/init.d/dbus start\" >> /opt/bootlocal.sh" >> $@.incomplete/usr/local/tce.installed/audio-vbox
+	$(VERBOSE)echo "alsactl restore"                                                >> $@.incomplete/usr/local/tce.installed/audio-vbox
+	$(VERBOSE)chmod +x $@.incomplete/usr/local/tce.installed/audio-vbox
+	@# create autostart file for pulseaudio
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/etc/X.d
+	$(VERBOSE)echo "start-pulseaudio-x11" > $@.incomplete/usr/local/etc/X.d/pulseaudio
+	$(VERBOSE)chmod +x $@.incomplete/usr/local/etc/X.d/pulseaudio
+	@# create squashfs package and cleanup
+	$(VERBOSE)$(pack_squashfs)
+	$(VERBOSE)rm -r $@.incomplete
+	
+##################
+# webcam support #
+##################
+
 11.x/uvcvideo.tcz.dep: | 11.x
 	$(VERBOSE)touch $@
 	@true
 
-# build minimalistic webcam support package
+13.x/uvcvideo.tcz.dep: | 13.x
+	$(VERBOSE)touch $@
+	@true
+
+# build minimalistic webcam support package for 11.x
 11.x/uvcvideo.tcz: $(DOWNLOAD_DIR)/11.x/v4l-dvb-5.4.3-tinycore.tcz | 11.x
 	$(VERBOSE)unsquashfs -d $@.incomplete $< > /dev/null
 	$(VERBOSE)find $@.incomplete -type f \! \( -name uvcvideo.ko.gz -o -name videobuf2-v4l2.ko.gz -o -name videobuf2-common.ko.gz -o -name videobuf2-vmalloc.ko.gz -o -name videobuf2-memops.ko.gz \) -delete
@@ -126,7 +179,18 @@ $(call check_tool,gzip)
 	$(VERBOSE)$(pack_squashfs)
 	$(VERBOSE)rm -r $@.incomplete
 
-11.1 11.x:
+# build minimalistic webcam support package for 13.x
+13.x/uvcvideo.tcz: $(DOWNLOAD_DIR)/13.x/v4l-dvb-5.15.10-tinycore64.tcz | 13.x
+	$(VERBOSE)unsquashfs -d $@.incomplete $< > /dev/null
+	$(VERBOSE)find $@.incomplete -type f \! \( -name uvcvideo.ko.gz -o -name videobuf2-v4l2.ko.gz -o -name videobuf2-common.ko.gz -o -name videobuf2-vmalloc.ko.gz -o -name videobuf2-memops.ko.gz \) -delete
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/tce.installed
+	$(VERBOSE)echo "#!/bin/sh"         >  $@.incomplete/usr/local/tce.installed/uvcvideo
+	$(VERBOSE)echo "modprobe uvcvideo" >> $@.incomplete/usr/local/tce.installed/uvcvideo
+	$(VERBOSE)chmod +x $@.incomplete/usr/local/tce.installed/uvcvideo
+	$(VERBOSE)$(pack_squashfs)
+	$(VERBOSE)rm -r $@.incomplete
+
+11.1 11.x 13.1 13.x:
 	$(VERBOSE)mkdir $@
 
 $(DOWNLOAD_DIR)/%.iso:
@@ -134,6 +198,9 @@ $(DOWNLOAD_DIR)/%.iso:
 
 $(DOWNLOAD_DIR)/11.x/%.tcz:
 	$(VERBOSE)make -f $(ROOT_DIR)/mk/download DOWNLOAD_DIR=$(DOWNLOAD_DIR) VERBOSE=$(VERBOSE) 11.x/$*.tcz
+
+$(DOWNLOAD_DIR)/13.x/%.tcz:
+	$(VERBOSE)make -f $(ROOT_DIR)/mk/download DOWNLOAD_DIR=$(DOWNLOAD_DIR) VERBOSE=$(VERBOSE) 13.x/$*.tcz
 
 clean:
 	$(VERBOSE)rm -f */*.gz

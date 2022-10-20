@@ -26,6 +26,8 @@ APPLIANCE := $(firstword $(MAKECMDGOALS))
 
 include $(ROOT_DIR)/appliances/$(APPLIANCE)/iso.mk
 
+VMLINUZ ?= vmlinuz
+
 BUILD_DIR ?= $(ROOT_DIR)/build
 
 # check that $(BUILD_DIR)/$(APPLIANCE).dep exists
@@ -103,11 +105,11 @@ $(BUILD_DIR)/$(APPLIANCE)/cde/onboot.lst:
 # generate isolinux.cfg
 $(BUILD_DIR)/$(APPLIANCE)/boot/isolinux/isolinux.cfg:
 	$(VERBOSE)mkdir -p $(dir $@)
-	$(VERBOSE)echo    "display boot.msg"      >  $@
-	$(VERBOSE)echo    "default custom"        >> $@
-	$(VERBOSE)echo    "label custom"          >> $@
-	$(VERBOSE)echo    " kernel /boot/vmlinuz" >> $@
-	$(VERBOSE)echo -n " initrd /boot/core.gz" >> $@
+	$(VERBOSE)echo    "display boot.msg"         >  $@
+	$(VERBOSE)echo    "default custom"           >> $@
+	$(VERBOSE)echo    "label custom"             >> $@
+	$(VERBOSE)echo    " kernel /boot/$(VMLINUZ)" >> $@
+	$(VERBOSE)echo -n " initrd /boot/$(notdir ${CORE_GZ})" >> $@
 	$(VERBOSE) \
 		for initrd in $(notdir $(EXTRA_INITRDS)); do \
 			echo -n ",/boot/$$initrd" >> $@; \
@@ -125,7 +127,7 @@ $(BUILD_DIR)/$(APPLIANCE)/boot/isolinux/isolinux.cfg:
 # copy initrds
 $(BUILD_DIR)/$(APPLIANCE)/boot: $(SHARE_DIR)/$(CORE_GZ) $(SHARE_DIR)/$(EXTRA_INITRDS) $(BUILD_DIR)/$(APPLIANCE)/boot/isolinux/isolinux.cfg
 	$(VERBOSE)mkdir -p $@
-	$(VERBOSE)cp $< $(BUILD_DIR)/$(APPLIANCE)/boot/core.gz
+	$(VERBOSE)cp $< $(BUILD_DIR)/$(APPLIANCE)/boot/$(notdir ${CORE_GZ})
 	$(VERBOSE) \
 		for initrd in $(EXTRA_INITRDS); do \
 			cp $(SHARE_DIR)/$$initrd $(BUILD_DIR)/$(APPLIANCE)/boot/; \
