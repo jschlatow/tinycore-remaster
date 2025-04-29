@@ -95,6 +95,39 @@ $(DOWNLOAD_DIR)/%-13.1.iso: $(DOWNLOAD_DIR)/%-13.1.iso.md5.txt
 $(DOWNLOAD_DIR)/%-13.1.iso.md5.txt:
 	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/13.x/x86_64/release/$*-13.1.iso.md5.txt &> /dev/null
 
+## VERSION 16
+
+# download of tcz archives
+$(DOWNLOAD_DIR)/16.x/%.tcz: $(DOWNLOAD_DIR)/16.x/%.tcz.md5.txt
+	@echo "Downloading $@"
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/16.x/x86_64/tcz/$*.tcz &> /dev/null
+	$(VERBOSE)cd $(dir $@) && md5sum -c $*.tcz.md5.txt || rm $@
+
+# download of md5 files for tcz archives
+$(DOWNLOAD_DIR)/16.x/%.tcz.md5.txt:
+	$(VERBOSE)mkdir -p $(dir $@)
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/16.x/x86_64/tcz/$*.tcz.md5.txt &> /dev/null
+
+# dependencies of a tcz archive are stored in a *.tcz.dep file
+# if it does not exist, there are no dependencies
+$(DOWNLOAD_DIR)/16.x/%.tcz.dep:
+	$(VERBOSE)mkdir -p $(dir $@)
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/16.x/x86_64/tcz/$*.tcz.dep &> /dev/null || touch $@
+	$(VERBOSE)sed -i 's/^/16.x\//' $@
+
+$(DOWNLOAD_DIR)/16.x/%.tcz.tree:
+	$(VERBOSE)mkdir -p $(dir $@)
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/16.x/x86_64/tcz/$*.tcz.tree &> /dev/null || touch $@
+	$(VERBOSE)sed -i 's/\s*\(.\)/16.x\/\1/' $@
+
+$(DOWNLOAD_DIR)/%-16.0.iso: $(DOWNLOAD_DIR)/%-16.0.iso.md5.txt
+	@echo "Downloading $@"
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/16.x/x86_64/release/$*-16.0.iso &> /dev/null
+	$(VERBOSE)cd $(dir $@) && md5sum -c $*-16.0.iso.md5.txt || rm $@
+
+$(DOWNLOAD_DIR)/%-16.0.iso.md5.txt:
+	$(VERBOSE)curl -f -o $@ http://tinycorelinux.net/16.x/x86_64/release/$*-16.0.iso.md5.txt &> /dev/null
+
 $(MAKECMDGOALS): $(TARGETS) | $(DOWNLOAD_DIR)
 	@true
 

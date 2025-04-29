@@ -34,6 +34,8 @@ DEPS1 += $(call dependencies_from_files,$(addsuffix .tcz.dep,$(addprefix $(SHARE
 
 DEPS2 := $(addprefix $(DOWNLOAD_DIR)/,$(addsuffix .tree,$(sort $(DEPS1))))
 
+.PHONY: $(BUILD_DIR)/$(APPLIANCE).dep
+
 # download .tree files for each second-level dependency
 $(DOWNLOAD_DIR)/%: | $(DOWNLOAD_DIR)
 	$(VERBOSE)$(ROOT_DIR)/mk/download $* DOWNLOAD_DIR=$(DOWNLOAD_DIR)

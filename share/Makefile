@@ -46,12 +46,19 @@ $(call check_tool,gzip)
 13.1/corepure64.gz: $(DOWNLOAD_DIR)/CorePure64-13.1.iso | 13.1
 	$(call extract_from_iso,$<,'/boot/corepure64.gz',$@)
 
+16.0/corepure64.gz: $(DOWNLOAD_DIR)/CorePure64-16.0.iso | 16.0
+	$(call extract_from_iso,$<,'/boot/corepure64.gz',$@)
+
 # extract from TinyCore.iso
 11.1/tinycore.gz: $(DOWNLOAD_DIR)/TinyCore-11.1.iso | 11.1
 	$(call extract_from_iso,$<,'/boot/core.gz',$@)
 
 13.1/tinycorepure64.gz: $(DOWNLOAD_DIR)/TinyCorePure64-13.1.iso | 13.1
 	$(call extract_from_iso,$<,'/boot/corepure64.gz',$@)
+
+16.0/tinycorepure64.gz: $(DOWNLOAD_DIR)/TinyCorePure64-16.0.iso | 16.0
+	$(call extract_from_iso,$<,'/boot/corepure64.gz',$@)
+
 
 ################
 # vbox modules #
@@ -98,6 +105,23 @@ $(call check_tool,gzip)
 	$(VERBOSE)$(pack_initrd)
 	$(VERBOSE)rm -rf $@.incomplete
 
+# build initrd with vbox guest additions support
+16.x/vboxga_tools.gz: 16.0/tinycorepure64.gz | 16.x
+	$(VERBOSE)mkdir -p $@.incomplete
+	@# copy etc/group, etc/passwd and opt/bootlocal.sh from core.gz to make additions
+	@# TODO: for allowing persistent home or tce dir in shared folders, we would need
+	@#       to hook into etc/init.d/tc-config to load vboxsf and start the service earlier
+	$(VERBOSE)zcat 16.0/tinycorepure64.gz | cpio -i -H newc -d -D $@.incomplete etc/group opt/bootlocal.sh
+	$(VERBOSE)echo "vboxsf:x:1000:tc"                  >> $@.incomplete/etc/group
+	$(VERBOSE)echo "modprobe vboxguest"                >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "modprobe vboxsf"                   >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "mkdir -p /media"                   >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "chown root:vboxsf /media"          >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "mount -t vboxsf -o 'gid=1000' shared /media" >> $@.incomplete/opt/bootlocal.sh
+	@# pack everything into initrd
+	$(VERBOSE)$(pack_initrd)
+	$(VERBOSE)rm -rf $@.incomplete
+
 #################
 # audio support #
 #################
@@ -107,6 +131,9 @@ $(call check_tool,gzip)
 
 13.x/audio-vbox.tcz.dep: | 13.x
 	$(VERBOSE)echo "13.x/pulseaudio.tcz" > $@
+
+16.x/audio-vbox.tcz.dep: | 16.x
+	$(VERBOSE)echo "16.x/pulseaudio.tcz" > $@
 
 # build minimalistic audio support package for virtualbox for 11.x
 11.x/audio-vbox.tcz: $(DOWNLOAD_DIR)/11.x/alsa-config.tcz $(ARCHIVE_DIR)/asound.state 11.x/audio-vbox.tcz.dep | 11.x
@@ -155,6 +182,30 @@ $(call check_tool,gzip)
 	@# create squashfs package and cleanup
 	$(VERBOSE)$(pack_squashfs)
 	$(VERBOSE)rm -r $@.incomplete
+
+# build minimalistic audio support package for virtualbox for 16.x
+16.x/audio-vbox.tcz: $(DOWNLOAD_DIR)/16.x/alsa-config.tcz $(ARCHIVE_DIR)/asound.state 16.x/audio-vbox.tcz.dep | 16.x
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/etc/alsa/cards
+	$(VERBOSE)unsquashfs -d alsa-config.tmp $< > /dev/null
+	$(VERBOSE)cp $(ARCHIVE_DIR)/asound.state $@.incomplete/usr/local/etc/alsa
+	$(VERBOSE)cp -r alsa-config.tmp/usr/local/etc/alsa/pcm $@.incomplete/usr/local/etc/alsa
+	$(VERBOSE)cp    alsa-config.tmp/usr/local/etc/alsa/cards/HDA-Intel.conf $@.incomplete/usr/local/etc/alsa/cards/
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/share/alsa
+	$(VERBOSE)cp -r alsa-config.tmp/usr/local/share/alsa/init $@.incomplete/usr/local/share/alsa
+	$(VERBOSE)rm -rf alsa-config.tmp
+	@# create tce.installed/audio-vbox
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/tce.installed
+	$(VERBOSE)echo "#!/bin/sh"                                                      >  $@.incomplete/usr/local/tce.installed/audio-vbox
+	$(VERBOSE)echo "echo \"/usr/local/etc/init.d/dbus start\" >> /opt/bootlocal.sh" >> $@.incomplete/usr/local/tce.installed/audio-vbox
+	$(VERBOSE)echo "alsactl restore"                                                >> $@.incomplete/usr/local/tce.installed/audio-vbox
+	$(VERBOSE)chmod +x $@.incomplete/usr/local/tce.installed/audio-vbox
+	@# create autostart file for pulseaudio
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/etc/X.d
+	$(VERBOSE)echo "start-pulseaudio-x11" > $@.incomplete/usr/local/etc/X.d/pulseaudio
+	$(VERBOSE)chmod +x $@.incomplete/usr/local/etc/X.d/pulseaudio
+	@# create squashfs package and cleanup
+	$(VERBOSE)$(pack_squashfs)
+	$(VERBOSE)rm -r $@.incomplete
 	
 ##################
 # webcam support #
@@ -165,6 +216,10 @@ $(call check_tool,gzip)
 	@true
 
 13.x/uvcvideo.tcz.dep: | 13.x
+	$(VERBOSE)touch $@
+	@true
+
+16.x/uvcvideo.tcz.dep: | 16.x
 	$(VERBOSE)touch $@
 	@true
 
@@ -190,7 +245,18 @@ $(call check_tool,gzip)
 	$(VERBOSE)$(pack_squashfs)
 	$(VERBOSE)rm -r $@.incomplete
 
-11.1 11.x 13.1 13.x:
+# build minimalistic webcam support package for 13.x
+16.x/uvcvideo.tcz: $(DOWNLOAD_DIR)/16.x/v4l-dvb-6.12.11-tinycore64.tcz | 16.x
+	$(VERBOSE)unsquashfs -d $@.incomplete $< > /dev/null
+	$(VERBOSE)find $@.incomplete -type f \! \( -name uvc.ko.gz -o -name uvcvideo.ko.gz -o -name videobuf2-v4l2.ko.gz -o -name videobuf2-common.ko.gz -o -name videobuf2-vmalloc.ko.gz -o -name videobuf2-memops.ko.gz \) -delete
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/tce.installed
+	$(VERBOSE)echo "#!/bin/sh"         >  $@.incomplete/usr/local/tce.installed/uvcvideo
+	$(VERBOSE)echo "modprobe uvcvideo" >> $@.incomplete/usr/local/tce.installed/uvcvideo
+	$(VERBOSE)chmod +x $@.incomplete/usr/local/tce.installed/uvcvideo
+	$(VERBOSE)$(pack_squashfs)
+	$(VERBOSE)rm -r $@.incomplete
+
+11.1 11.x 13.1 13.x 16.0 16.x:
 	$(VERBOSE)mkdir $@
 
 $(DOWNLOAD_DIR)/%.iso:
@@ -201,6 +267,9 @@ $(DOWNLOAD_DIR)/11.x/%.tcz:
 
 $(DOWNLOAD_DIR)/13.x/%.tcz:
 	$(VERBOSE)make -f $(ROOT_DIR)/mk/download DOWNLOAD_DIR=$(DOWNLOAD_DIR) VERBOSE=$(VERBOSE) 13.x/$*.tcz
+
+$(DOWNLOAD_DIR)/16.x/%.tcz:
+	$(VERBOSE)make -f $(ROOT_DIR)/mk/download DOWNLOAD_DIR=$(DOWNLOAD_DIR) VERBOSE=$(VERBOSE) 16.x/$*.tcz
 
 clean:
 	$(VERBOSE)rm -f */*.gz

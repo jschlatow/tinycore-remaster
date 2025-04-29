@@ -1,0 +1,12 @@
+for_window [class="Firefox"] border pixel 1
+for_window [class="Firefox"] layout tabbed
+exec /usr/local/bin/browser
+exec --no-startup-id sudo VBoxClient --display; sudo VBoxClient --clipboard
+
+bindsym Mod1+F4 kill
+
+bindsym Mod1+Return exec /usr/local/bin/aterm
+
+bindsym Mod1+m exec /usr/local/bin/pavucontrol
+
+bindsym Mod1+r exec sudo pkill -9 -f clipboard; exec sudo VBoxClient --clipboard

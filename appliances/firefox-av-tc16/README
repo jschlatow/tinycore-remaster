@@ -1,0 +1,8 @@
+Kiosk VM featuring firefox with audio and video (webcam) support.
+
+TODO
+Current status:
+
+* missing vbox guest additions (resize, clipboard and shared folders)
+	* For TC 13.x, no linux-kernel-sources-env tcz is provided. This makes
+	  compilation of the guest additions quite a hassle.
