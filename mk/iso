@@ -80,7 +80,7 @@ $(SHARE_DIR)/%:
 
 # create custom mydata.tgz
 $(BUILD_DIR)/$(APPLIANCE)/mydata.tgz: $(MYDATA)
-	$(VERBOSE)cd $(MYDATA) && tar --owner=1001 --group=50 -hczf $@ *
+	$(VERBOSE)cd $(MYDATA) && tar --owner=1001 --group=50 -czf $@ *
 
 # copy tcz files
 $(BUILD_DIR)/$(APPLIANCE)/cde/optional: $(TCZ) $(DEP)
