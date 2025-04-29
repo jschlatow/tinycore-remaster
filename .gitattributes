@@ -2,3 +2,4 @@ archives/firefox.tcz filter=lfs diff=lfs merge=lfs -text
 archives/vboxga5244-5.4.3-tinycore.tar.gz filter=lfs diff=lfs merge=lfs -text
 archives/i3.tcz filter=lfs diff=lfs merge=lfs -text
 archives/13.x/firefox.tcz filter=lfs diff=lfs merge=lfs -text
+archives/16.x/firefox.tcz filter=lfs diff=lfs merge=lfs -text
