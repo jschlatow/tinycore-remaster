@@ -1,5 +1,5 @@
-for_window [class="Firefox"] border pixel 1
-for_window [class="Firefox"] layout tabbed
+for_window [class="firefox"] border pixel 1
+for_window [class="firefox"] layout tabbed
 exec /usr/local/bin/browser
 exec --no-startup-id sudo VBoxClient --display; sudo VBoxClient --clipboard
 
