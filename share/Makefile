@@ -117,7 +117,7 @@ $(call check_tool,gzip)
 	$(VERBOSE)echo "modprobe vboxsf"                   >> $@.incomplete/opt/bootlocal.sh
 	$(VERBOSE)echo "mkdir -p /media"                   >> $@.incomplete/opt/bootlocal.sh
 	$(VERBOSE)echo "chown root:vboxsf /media"          >> $@.incomplete/opt/bootlocal.sh
-	$(VERBOSE)echo "mount -t vboxsf -o 'gid=1000,dmode=770' shared /media" >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "mount -t vboxsf -o 'gid=1000,dmode=770,fmode=660' shared /media" >> $@.incomplete/opt/bootlocal.sh
 	@# pack everything into initrd
 	$(VERBOSE)$(pack_initrd)
 	$(VERBOSE)rm -rf $@.incomplete
