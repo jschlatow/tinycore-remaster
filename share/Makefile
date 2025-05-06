@@ -256,8 +256,34 @@ $(call check_tool,gzip)
 	$(VERBOSE)$(pack_squashfs)
 	$(VERBOSE)rm -r $@.incomplete
 
+######################
+# KeePassXC AppImage #
+######################
+
+16.x/keepassxc.tcz.dep: | 16.x
+	$(VERBOSE)echo "16.x/bash.tcz" > $@
+	$(VERBOSE)echo "16.x/fuse.tcz" >> $@
+	$(VERBOSE)echo "16.x/libgpg-error.tcz" >> $@
+	$(VERBOSE)echo "16.x/libusb.tcz" >> $@
+
+16.x/keepassxc.tcz: $(DOWNLOAD_DIR)/KeePassXC-2.7.10-x86_64.AppImage | 16.x
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/bin
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/tce.installed
+	$(VERBOSE)cp $< $@.incomplete/usr/local/bin/keepassxc
+	$(VERBOSE)chmod +x $@.incomplete/usr/local/bin/keepassxc
+	$(VERBOSE)echo "#!/bin/sh"                               >  $@.incomplete/usr/local/tce.installed/keepassxc
+	$(VERBOSE)echo "[ -e /lib64 ] || sudo ln -s /lib /lib64" >> $@.incomplete/usr/local/tce.installed/keepassxc
+	$(VERBOSE)chmod +x $@.incomplete/usr/local/tce.installed/keepassxc
+	$(VERBOSE)$(pack_squashfs)
+	$(VERBOSE)rm -r $@.incomplete
+
 11.1 11.x 13.1 13.x 16.0 16.x:
 	$(VERBOSE)mkdir $@
+
+$(DOWNLOAD_DIR)/KeePassXC-2.7.10-x86_64.AppImage:
+	@echo "Downloading $@"
+	$(VERBOSE) curl -s -L -f -o $@ https://github.com/keepassxreboot/keepassxc/releases/download/2.7.10/KeePassXC-2.7.10-x86_64.AppImage
+	$(VERBOSE)cd $(dir $@); (echo "3f8308a4d905d067367d541b4dccd5e80700798039046ffc388ede4f50887b36  $@" | sha256sum -c) || exit 1
 
 $(DOWNLOAD_DIR)/%.iso:
 	$(VERBOSE)make -f $(ROOT_DIR)/mk/download DOWNLOAD_DIR=$(DOWNLOAD_DIR) VERBOSE=$(VERBOSE) $*.iso

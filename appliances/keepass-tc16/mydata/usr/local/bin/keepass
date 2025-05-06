@@ -1,5 +1,5 @@
 #!/bin/sh
 
 while true; do
-	/usr/local/bin/keepassx
+	/usr/local/bin/keepassxc
 done
