@@ -1,5 +1,5 @@
-for_window [class="keepassx"] border pixel 1
-for_window [class="keepassx"] layout tabbed
+for_window [class="KeePassXC"] border pixel 1
+for_window [class="KeePassXC"] layout tabbed
 exec /usr/local/bin/keepass
 exec --no-startup-id sudo VBoxClient --display; sudo VBoxClient --clipboard
 
