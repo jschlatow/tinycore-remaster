@@ -281,6 +281,26 @@ $(call check_tool,gzip)
 	$(VERBOSE)$(pack_squashfs)
 	$(VERBOSE)rm -r $@.incomplete
 
+###############
+# Thunderbird #
+###############
+
+16.x/thunderbird.tcz: $(DOWNLOAD_DIR)/thunderbird-138.0.tar.xz | 16.x
+	$(VERBOSE)mkdir -p $@.incomplete.src
+	$(VERBOSE)cd $@.incomplete.src; tar -xf $<
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local
+	$(VERBOSE)cp -rf $@.incomplete.src/* $@.incomplete/usr/local
+	$(VERBOSE)rm -rf $@.incomplete.src
+	$(VERBOSE)mkdir -p $@.incomplete/usr/local/tce.installed
+	$(VERBOSE)echo '#!/bin/sh' > $@.incomplete/usr/local/tce.installed/thunderbird
+	$(VERBOSE)echo '[ -e /usr/local/bin/thunderbird ] || sudo ln -s /usr/local/thunderbird/thunderbird /usr/local/bin/thunderbird' >> $@.incomplete/usr/local/tce.installed/thunderbird
+	$(VERBOSE)echo "[ -e /lib64 ] || sudo ln -s /lib /lib64" >> $@.incomplete/usr/local/tce.installed/thunderbird
+	$(VERBOSE)find $@.incomplete/ -type d | xargs chmod -v 755;
+	$(VERBOSE)chmod +x $@.incomplete/usr/local/tce.installed/thunderbird
+	$(VERBOSE)find $@.incomplete | xargs file | grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded
+	$(VERBOSE)$(pack_squashfs)
+	$(VERBOSE)rm -r $@.incomplete
+
 11.1 11.x 13.1 13.x 16.0 16.x:
 	$(VERBOSE)mkdir $@
 
@@ -288,6 +308,11 @@ $(DOWNLOAD_DIR)/KeePassXC-2.7.10-x86_64.AppImage:
 	@echo "Downloading $@"
 	$(VERBOSE) curl -s -L -f -o $@ https://github.com/keepassxreboot/keepassxc/releases/download/2.7.10/KeePassXC-2.7.10-x86_64.AppImage
 	$(VERBOSE)cd $(dir $@); (echo "3f8308a4d905d067367d541b4dccd5e80700798039046ffc388ede4f50887b36  $@" | sha256sum -c) || exit 1
+
+$(DOWNLOAD_DIR)/thunderbird-138.0.tar.xz:
+	@echo "Downloading $@"
+	$(VERBOSE) curl -s -L -f -o $@ https://download-installer.cdn.mozilla.net/pub/thunderbird/releases/138.0/linux-x86_64/en-US/thunderbird-138.0.tar.xz
+	$(VERBOSE)cd $(dir $@); (echo "12943e11b8138d63a1fa3bae87b2672d0f49293ef9a636dc2882120dab0b363b  $@" | sha256sum -c) || exit 1
 
 $(DOWNLOAD_DIR)/%.iso:
 	$(VERBOSE)make -f $(ROOT_DIR)/mk/download DOWNLOAD_DIR=$(DOWNLOAD_DIR) VERBOSE=$(VERBOSE) $*.iso

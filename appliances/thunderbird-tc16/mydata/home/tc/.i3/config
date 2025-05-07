@@ -1,5 +1,5 @@
-for_window [class="Thunderbird"] border pixel 1
-for_window [class="Thunderbird"] layout tabbed
+for_window [class="thunderbird"] border pixel 1
+for_window [class="thunderbird"] layout tabbed
 exec /usr/local/bin/mailclient
 exec --no-startup-id sudo VBoxClient --display; sudo VBoxClient --clipboard
 
