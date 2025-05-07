@@ -125,7 +125,7 @@ $(BUILD_DIR)/$(APPLIANCE)/boot/isolinux/isolinux.cfg:
 	$(VERBOSE)echo    "F4 f4"                             >> $@
 
 # copy initrds
-$(BUILD_DIR)/$(APPLIANCE)/boot: $(SHARE_DIR)/$(CORE_GZ) $(SHARE_DIR)/$(EXTRA_INITRDS) $(BUILD_DIR)/$(APPLIANCE)/boot/isolinux/isolinux.cfg
+$(BUILD_DIR)/$(APPLIANCE)/boot: $(SHARE_DIR)/$(CORE_GZ) $(addprefix $(SHARE_DIR)/,$(EXTRA_INITRDS)) $(BUILD_DIR)/$(APPLIANCE)/boot/isolinux/isolinux.cfg
 	$(VERBOSE)mkdir -p $@
 	$(VERBOSE)cp $< $(BUILD_DIR)/$(APPLIANCE)/boot/$(notdir ${CORE_GZ})
 	$(VERBOSE) \
@@ -143,6 +143,7 @@ $(BUILD_DIR)/$(APPLIANCE)-iso: $(DOWNLOAD_DIR)/$(BASE_ISO) $(BUILD_DIR)/$(APPLIA
 	$(VERBOSE)rm -rf $@/*
 	$(VERBOSE)cd $@ && isoinfo -i $< -J -X
 	$(VERBOSE)chmod -R ug+w $@
+	$(VERBOSE)rm $@/boot/corepure64.gz
 	$(VERBOSE)cp -r $(BUILD_DIR)/$(APPLIANCE)/* $@
 	$(VERBOSE)rm -r $(BUILD_DIR)/$(APPLIANCE)
 
