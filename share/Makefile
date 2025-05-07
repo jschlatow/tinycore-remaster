@@ -115,9 +115,13 @@ $(call check_tool,gzip)
 	$(VERBOSE)echo "vboxsf:x:1000:tc"                  >> $@.incomplete/etc/group
 	$(VERBOSE)echo "modprobe vboxguest"                >> $@.incomplete/opt/bootlocal.sh
 	$(VERBOSE)echo "modprobe vboxsf"                   >> $@.incomplete/opt/bootlocal.sh
-	$(VERBOSE)echo "mkdir -p /media"                   >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "mkdir -p /media/shared"            >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "mkdir -p /media/data"              >> $@.incomplete/opt/bootlocal.sh
 	$(VERBOSE)echo "chown root:vboxsf /media"          >> $@.incomplete/opt/bootlocal.sh
-	$(VERBOSE)echo "mount -t vboxsf -o 'gid=1000,dmode=770,fmode=660' shared /media" >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "chown root:vboxsf /media/shared"   >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "chown root:vboxsf /media/data"     >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "mount -t vboxsf -o 'gid=1000,dmode=770,fmode=660' data   /media/data"   >> $@.incomplete/opt/bootlocal.sh
+	$(VERBOSE)echo "mount -t vboxsf -o 'gid=1000,dmode=770,fmode=660' shared /media/shared" >> $@.incomplete/opt/bootlocal.sh
 	@# pack everything into initrd
 	$(VERBOSE)$(pack_initrd)
 	$(VERBOSE)rm -rf $@.incomplete
