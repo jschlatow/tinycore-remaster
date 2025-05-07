@@ -1,0 +1,6 @@
+Kiosk VM featuring Thunderbird.
+
+Current status:
+
+* pasting from shared clipboard sometimes gets stuck, the clipboard service can
+  be restarted by Alt+r
