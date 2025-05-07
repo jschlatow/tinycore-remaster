@@ -1,5 +1,7 @@
 #!/bin/sh
 
+xrdb -merge ~/.Xresources
+
 while true; do
 	/usr/local/bin/keepassxc
 done
