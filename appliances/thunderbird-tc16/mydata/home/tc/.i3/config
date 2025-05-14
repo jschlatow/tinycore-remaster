@@ -2,9 +2,16 @@ for_window [class="thunderbird"] border pixel 1
 for_window [class="thunderbird"] layout tabbed
 exec /usr/local/bin/mailclient
 exec --no-startup-id sudo VBoxClient --display; sudo VBoxClient --clipboard
+exec --no-startup-id setxkbmap -model pc105 -layout us -variant altgr-intl
 
 bindsym Mod1+F4 kill
 
 bindsym Mod1+Return exec /usr/local/bin/aterm
 
 bindsym Mod1+r exec sudo pkill -9 -f clipboard; exec sudo VBoxClient --clipboard
+
+floating_modifier Mod1
+
+bindsym Mod1+Shift+i exec --no-startup-id setxkbmap -model pc105 -layout us -variant altgr-intl
+bindsym Mod1+Shift+u exec --no-startup-id setxkbmap -model pc105 -layout us
+bindsym Mod1+Shift+d exec --no-startup-id setxkbmap -model pc105 -layout de
