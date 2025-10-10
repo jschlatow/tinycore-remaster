@@ -304,7 +304,7 @@ $(call check_tool,gzip)
 # Thunderbird #
 ###############
 
-16.x/thunderbird.tcz: $(DOWNLOAD_DIR)/thunderbird-138.0.tar.xz | 16.x
+16.x/thunderbird.tcz: $(DOWNLOAD_DIR)/thunderbird-143.0.tar.xz | 16.x
 	$(VERBOSE)mkdir -p $@.incomplete.src
 	$(VERBOSE)cd $@.incomplete.src; tar -xf $<
 	$(VERBOSE)mkdir -p $@.incomplete/usr/local
@@ -328,10 +328,10 @@ $(DOWNLOAD_DIR)/KeePassXC-2.7.10-x86_64.AppImage:
 	$(VERBOSE) curl -s -L -f -o $@ https://github.com/keepassxreboot/keepassxc/releases/download/2.7.10/KeePassXC-2.7.10-x86_64.AppImage
 	$(VERBOSE)cd $(dir $@); (echo "3f8308a4d905d067367d541b4dccd5e80700798039046ffc388ede4f50887b36  $@" | sha256sum -c) || exit 1
 
-$(DOWNLOAD_DIR)/thunderbird-138.0.tar.xz:
+$(DOWNLOAD_DIR)/thunderbird-143.0.tar.xz:
 	@echo "Downloading $@"
-	$(VERBOSE) curl -s -L -f -o $@ https://download-installer.cdn.mozilla.net/pub/thunderbird/releases/138.0/linux-x86_64/en-US/thunderbird-138.0.tar.xz
-	$(VERBOSE)cd $(dir $@); (echo "12943e11b8138d63a1fa3bae87b2672d0f49293ef9a636dc2882120dab0b363b  $@" | sha256sum -c) || exit 1
+	$(VERBOSE) curl -s -L -f -o $@ https://download-installer.cdn.mozilla.net/pub/thunderbird/releases/143.0.1/linux-x86_64/en-US/thunderbird-143.0.1.tar.xz
+	$(VERBOSE)cd $(dir $@); (echo "bf54e51cc92f7a4455b437b64ffc3b4a9bedd1c22da91cf92d4724fa5dea02b7  $@" | sha256sum -c) || exit 1
 
 $(DOWNLOAD_DIR)/%.iso:
 	$(VERBOSE)make -f $(ROOT_DIR)/mk/download DOWNLOAD_DIR=$(DOWNLOAD_DIR) VERBOSE=$(VERBOSE) $*.iso
