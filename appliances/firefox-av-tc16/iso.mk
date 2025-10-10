@@ -10,4 +10,5 @@ APPS(DOWNLOAD) := 16.x/Xorg-7.7 \
 APPS(ARCHIVE)  := 16.x/firefox \
                   16.x/vboxclient
 APPS(SHARE)    := 16.x/audio-vbox \
-                  16.x/uvcvideo
+                  16.x/uvcvideo \
+                  16.x/acpid

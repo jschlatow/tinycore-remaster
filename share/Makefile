@@ -210,6 +210,25 @@ $(call check_tool,gzip)
 	@# create squashfs package and cleanup
 	$(VERBOSE)$(pack_squashfs)
 	$(VERBOSE)rm -r $@.incomplete
+
+############################
+# acpid (shutdown support) #
+############################
+
+16.x/acpid.tcz.dep: $(DOWNLOAD_DIR)/16.x/acpid.tcz.dep
+	$(VERBOSE)touch $@
+	@true
+
+16.x/acpid.tcz: $(DOWNLOAD_DIR)/16.x/acpid.tcz | 16.x
+	$(VERBOSE)unsquashfs -d $@.incomplete $< > /dev/null
+	$(VERBOSE)rm $@.incomplete/usr/local/share/acpid/files/lid*
+	$(VERBOSE)echo "event=button/power" > $@.incomplete/usr/local/share/acpid/files/power
+	$(VERBOSE)echo "action=/usr/bin/exitcheck.sh shutdown" >> $@.incomplete/usr/local/share/acpid/files/power
+	$(VERBOSE)chmod +x $@.incomplete/usr/local/share/acpid/files/power
+	$(VERBOSE)echo "cp /usr/local/share/acpid/files/power /usr/local/etc/acpi/events/" >> $@.incomplete/usr/local/tce.installed/acpid
+	$(VERBOSE)echo "echo \"/usr/local/etc/init.d/acpid start\" >> /opt/bootlocal.sh"    >> $@.incomplete/usr/local/tce.installed/acpid
+	$(VERBOSE)$(pack_squashfs)
+	$(VERBOSE)rm -r $@.incomplete
 	
 ##################
 # webcam support #
